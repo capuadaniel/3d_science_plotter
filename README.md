@@ -5,6 +5,7 @@ Made in Python, 2022, by Daniel Capua
 
 === How to ===
 Prepare your data in colluns on a csv or txt file using tabulation as identation mathod like this:
+
 X Y Z
 1 3 5
 1 3 5
