@@ -1,7 +1,8 @@
 import math
-
 import numpy as np
+from scipy.stats import rankdata
 
+#importa tabelas de referencia para os testes estatísticos
 import tabelas
 
 def combinations(iterable, r):
@@ -41,13 +42,37 @@ def alfaconvert(alfa, tabela):
             return 5
         elif alfa == 0.025:
             return 6
-        elif alfa == 0.010:
+        elif alfa == 0.01:
             return 7
         elif alfa == 0.001:
             return 8
 
         else:
             print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05, 0.10, 0.5, 0.95 ou 0.90')
+
+    elif tabela.upper() == 'ANORM':
+        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
+        if alfa == 0.20:
+            return 1
+        elif alfa == 0.10:
+            return 2
+        elif alfa == 0.05:
+            return 3
+        elif alfa == 0.02:
+            return 4
+        elif alfa == 0.01:
+            return 5
+        elif alfa == 0.002:
+            return 6
+        elif alfa == 0.001:
+            return 7
+        elif alfa == 0.0001:
+            return 8
+        elif alfa == 0.00001:
+            return 9
+
+        else:
+            print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05 ou 0.10')
 
     elif tabela.upper() == 'C':
         # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
@@ -64,6 +89,7 @@ def alfaconvert(alfa, tabela):
             return 5
         else:
             print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05 ou 0.10')
+
 
     elif tabela.upper() == 'F':
         # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
@@ -320,18 +346,85 @@ def t_aleatoriedade(lista, alfa = 0.05):
 
 
 def t_pontomudanca(lista, alfa):
-    N = len(lista) #tamanho da amostra
-    m = sum(lista) #n sucessos
-    n = N - m #n fracassos
-    Sj = maior = 0
-    for j,v in enumerate(lista,1):
-        if v == 1:
-            Sj += 1
-        Dmn = abs((N/(m * n)) * (Sj - ((j * m / N))))
-        if Dmn > maior:
-            maior = Dmn
+    avalia = []
+    N = len(lista)  # tamanho da amostra
+    m = sum(lista)  # n sucessos
+    n = N - m  # n fracassos
+    Zc = z = 0
+    for e in lista:
+        if e not in avalia:
+            avalia.append(e)
+    if len(avalia) == 2:
+        tipodeamostra = 'binomial'
+    else:
+        tipodeamostra = 'ordenado'
 
-    dmax = 0.096
-    print('valores', N,n,m,Sj)
-    return f'{maior} devia ser {dmax}'
+    if tipodeamostra == 'binomial':
+        Sj = maior = 0
+        for j,v in enumerate(lista,1):
+            if v == 1:
+                Sj += 1
+            Dmn = abs((N/(m * n)) * (Sj - ((j * m / N))))
+            if Dmn > maior:
+                maior = Dmn
 
+        z = maior # define z a maior diferença
+
+    elif tipodeamostra == 'ordenado':
+        lista = rankdata(lista,  method='average')
+        Wj = maior = Wassociado = 0
+        for j,c in enumerate(lista):
+            Wj += c
+            Kmn = abs(((2 * Wj)) - ((j+1) * (N + 1)))
+            print (Kmn)
+            if Kmn > maior:
+                Wassociado =Wj
+                maior = Kmn
+                m = j+1
+
+        Zc = maior # define Zc como a maior diferença
+        n = N - m
+
+        if m <= 10 and n <= 10: # pequenas amostras vão comparar Zc com a tabela J
+            try:
+                print(tabelas.J[m][n][maior])
+            except:
+                print(f'os valores de m e n foram {m} e {n}, e o Cl = {maior} mas não foi possivel resgatar um valor da tabela J, consulte a tabela')
+
+        else: # grandes amostras vão calcular outro Zc e comparar o valor com a tabela A
+            h = 0.5
+            if Wassociado > m*(N+1)/2:
+                h = -0.5
+            Zc = (Wassociado + h - m * (N + 1) / 2) / math.sqrt(m * n * (N + 1) / 12)
+            z = tabelas.Anorm[1][alfaconvert(alfa, 'anorm')]
+
+        if Zc > z:
+            return f'O valor Zc = {Zc} é maior do que z = {z}, para alfa = {alfa}. Favorecendo H1.\n Se for de interesse o ponto de mudança foi no posto {m}'
+        else:
+            return f'O valor Zc = {Zc} é menor ou igual a z = {z}, para alfa = {alfa}. Favorecendo H0'
+
+
+
+#valores de teste
+a = (29,19,18,25,17,10,15,11)
+b = (8,10,13,15,10,14,12,8,7,6)
+c = (203,352,452,523,572,605,634,660,683,697,709,718,729,744,750,757,763,767,771,788,804,812,820,832,840)
+d = (212.81,348.26,442.06,510.45,562.15,602.34,634.27,660.10,681.32,698.97,713.82,726.44,737.26,746.61,754.74,761.86,768.13,773.68,778.62,796.68,807.86,815.25,820.39,826.86,840.01)
+e = (13.53,28.42,48.11,48.64,51.40,59.91,67.98,79.13,103.05)
+f = (3,0,5,6,1)
+g = (1,5,3,2,4,6,2,3,3,5,6,6,2,1,6,4,6,3,1,5)
+h = (1,0,1,0,1,1,1,0,0,1,0,1,0,1,0,1,1,1,1,0,1,0,1,0,1,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,0,1,1,1,1,0,1,1,0,1,1)
+i = (1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,0,1,1,1,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,1,0,0,1,1,
+     0,1,1,0,1,1,1,1,0,0,1,0,1,1,1,1,0,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1,0,0,0,0,1,1,1,1,0,1,1,
+     0,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,0,0,1,1,1,1,0,1,1,0,1,
+     0,0,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1)
+j = (112,102,112,120,105,105,100,105,97,102,91,97,89,85,101,98,102,99,102,110,97,88,107,98,104)
+k = (97,102,98,102,99,102,110,97,88,107,98,104)
+
+
+#print(t_binomial(40,19,0.01))
+#print(t_quiquadrado(a, 0.01))
+#print(t_kolmogorovsmirnov(c,d,0.05, True))
+#print(t_infsimetria(e,0.05))
+#print(t_aleatoriedade(h))
+#print(t_pontomudanca(k,0.01))
