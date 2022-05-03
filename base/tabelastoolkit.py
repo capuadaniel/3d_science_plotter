@@ -22,7 +22,7 @@ def calcLIII(alfa):
     elif alfa == 0.001:
         Liii = 1.95
     else:
-        return('Alpha Error, escolha 0.20, 0.15,  0.10,  0.05 ou  0.01')
+        return('Alpha Error, escolha 0.20, 0.15, 0.10, 0.05, 0.25, 0.1, 0.005  ou  0.001')
 
     return Liii
 
