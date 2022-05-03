@@ -2,8 +2,9 @@ import math
 import numpy as np
 from scipy.stats import rankdata
 
-#importa tabelas de referencia para os testes estatísticos
+#importa tabelas de referencia para os testes estatísticos e seu kit de conversões
 import tabelas
+import tabelastoolkit
 
 def combinations(iterable, r):
     # Copiado do itertools
@@ -25,90 +26,6 @@ def combinations(iterable, r):
         for j in range(i+1, r):
             indices[j] = indices[j-1] + 1
         yield tuple(pool[i] for i in indices)
-
-def alfaconvert(alfa, tabela):
-    tabela = str(tabela.upper())
-    if tabela == 'A':
-        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela A
-        if alfa == 0.990:
-            return 1
-        elif alfa == 0.950:
-            return 2
-        elif alfa == 0.500:
-            return 3
-        elif alfa == 0.100:
-            return 4
-        elif alfa == 0.050:
-            return 5
-        elif alfa == 0.025:
-            return 6
-        elif alfa == 0.01:
-            return 7
-        elif alfa == 0.001:
-            return 8
-
-        else:
-            print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05, 0.10, 0.5, 0.95 ou 0.90')
-
-    elif tabela.upper() == 'ANORM':
-        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
-        if alfa == 0.20:
-            return 1
-        elif alfa == 0.10:
-            return 2
-        elif alfa == 0.05:
-            return 3
-        elif alfa == 0.02:
-            return 4
-        elif alfa == 0.01:
-            return 5
-        elif alfa == 0.002:
-            return 6
-        elif alfa == 0.001:
-            return 7
-        elif alfa == 0.0001:
-            return 8
-        elif alfa == 0.00001:
-            return 9
-
-        else:
-            print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05 ou 0.10')
-
-    elif tabela.upper() == 'C':
-        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
-
-        if alfa == 0.10:
-            return 1
-        elif alfa == 0.05:
-            return 2
-        elif alfa == 0.025:
-            return 3
-        elif alfa == 0.01:
-            return 4
-        elif alfa == 0.001:
-            return 5
-        else:
-            print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05 ou 0.10')
-
-
-    elif tabela.upper() == 'F':
-        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
-
-        if alfa == 0.20:
-            return 1
-        elif alfa == 0.15:
-            return 2
-        elif alfa == 0.10:
-            return 3
-        elif alfa == 0.05:
-            return 4
-        elif alfa == 0.01:
-            return 5
-        else:
-            print('Alpha Error, escolha 0.20, 0.15,  0.10,  0.05 ou  0.01')
-
-    else:
-        print('Tabela não inferiorormada, chame a função alfaconvert(alfa, tabela): ')
 
 
 def t_binomial(amostra, k, p = 0.500, bilateral = False):
@@ -183,7 +100,7 @@ def t_quiquadrado(l, alfa = 0.001, e = 0 ):
 
     # compara X² com a tabela C
     gl = len(l)-1
-    alf = alfaconvert(alfa, 'c' )
+    alf = tabelastoolkit.alfaconvert(alfa, 'c' )
     z = float(tabelas.C[gl][alf])
 
     #retorna o valor e a comparação
@@ -220,21 +137,10 @@ def t_kolmogorovsmirnov(l_o, l_e, alfa, frAcumulada = False):
     Dmax = max(l_o - l_e)
 
     if N > 35:
-        if alfa == 0.20:
-            sigi = 1.07
-        elif alfa == 0.15:
-            sigi = 1.14
-        elif alfa == 0.10:
-            sigi = 1.22
-        elif alfa == 0.05:
-            sigi = 1.36
-        elif alfa == 0.01:
-            sigi = 1.63
-        else:
-            return('Alpha Error, escolha 0.20, 0.15,  0.10,  0.05 ou  0.01')
+        sigi = tabelastoolkit.calcLIII(alfa)
         z = sigi/ math.sqrt(l_o[-1])
     else:
-        alf = alfaconvert(alfa, 'f')
+        alf = tabelastoolkit.alfaconvert(alfa, 'f')
         z = float(tabelas.F[N][alf])
     if z >= alfa:
         return f'O valor Dmax = {Dmax} é maior ou igual a z = {z}, para alfa = {alfa}. Favorecendo H0'
@@ -345,12 +251,21 @@ def t_aleatoriedade(lista, alfa = 0.05):
             return f'O valor Z calculado {Z} é menor que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H0. A ordem dos dados é aleatória'
 
 
-def t_pontomudanca(lista, alfa):
-    avalia = []
+def t_pontomudanca(lista, alfa=0.05):
+    '''
+    O teste de ponto mudança serve para desocobrir se há uma alteração suficientemente grande numa serie de valores a ponto
+    de ser razoavel assumir que essa variação não é aleatória, geralmente associada a uma mudança de desempenho ou no comportamento
+    descrito pela variável.
+    :param lista: lista de valores binarios (sucesso/fracasso) ou ordinais a serem avaliados
+    :param alfa: nivel de confiança do teste, por padrão 0.05
+    :return: o valor z calculado, sua referência na tabela e a hipótese favorecida.
+    '''
     N = len(lista)  # tamanho da amostra
     m = sum(lista)  # n sucessos
     n = N - m  # n fracassos
     Zc = z = 0
+
+    avalia = []
     for e in lista:
         if e not in avalia:
             avalia.append(e)
@@ -365,10 +280,14 @@ def t_pontomudanca(lista, alfa):
             if v == 1:
                 Sj += 1
             Dmn = abs((N/(m * n)) * (Sj - ((j * m / N))))
+
             if Dmn > maior:
                 maior = Dmn
 
-        z = maior # define z a maior diferença
+        Zc = maior # define z a maior diferença
+
+        sigi = tabelastoolkit.calcLIII(alfa)
+        z = sigi*(math.sqrt(N/(m*n)))
 
     elif tipodeamostra == 'ordenado':
         lista = rankdata(lista,  method='average')
@@ -376,7 +295,6 @@ def t_pontomudanca(lista, alfa):
         for j,c in enumerate(lista):
             Wj += c
             Kmn = abs(((2 * Wj)) - ((j+1) * (N + 1)))
-            print (Kmn)
             if Kmn > maior:
                 Wassociado =Wj
                 maior = Kmn
@@ -396,12 +314,12 @@ def t_pontomudanca(lista, alfa):
             if Wassociado > m*(N+1)/2:
                 h = -0.5
             Zc = (Wassociado + h - m * (N + 1) / 2) / math.sqrt(m * n * (N + 1) / 12)
-            z = tabelas.Anorm[1][alfaconvert(alfa, 'anorm')]
+            z = tabelas.Anorm[1][tabelastoolkit.alfaconvert(alfa, 'anorm')]
 
-        if Zc > z:
-            return f'O valor Zc = {Zc} é maior do que z = {z}, para alfa = {alfa}. Favorecendo H1.\n Se for de interesse o ponto de mudança foi no posto {m}'
-        else:
-            return f'O valor Zc = {Zc} é menor ou igual a z = {z}, para alfa = {alfa}. Favorecendo H0'
+    if Zc > z:
+        return f'O valor Zc = {Zc} é maior do que z = {z}, para alfa = {alfa}. Favorecendo H1.\n Se for de interesse o ponto de mudança foi no posto {m}'
+    else:
+        return f'O valor Zc = {Zc} é menor ou igual a z = {z}, para alfa = {alfa}. Favorecendo H0'
 
 
 
@@ -427,4 +345,4 @@ k = (97,102,98,102,99,102,110,97,88,107,98,104)
 #print(t_kolmogorovsmirnov(c,d,0.05, True))
 #print(t_infsimetria(e,0.05))
 #print(t_aleatoriedade(h))
-#print(t_pontomudanca(k,0.01))
+#print(t_pontomudanca(i,0.01))
