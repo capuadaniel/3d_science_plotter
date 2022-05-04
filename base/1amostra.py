@@ -6,11 +6,11 @@ from scipy.stats import rankdata
 import tabelas
 import tabelastoolkit
 
-def combinations(iterable, r):
+def combinations(lista, r):
     # Copiado do itertools
     # combinations('ABCD', 2) --> AB AC AD BC BD CD
     # combinations(range(4), 3) --> 012 013 023 123
-    pool = tuple(iterable)
+    pool = tuple(lista)
     n = len(pool)
     if r > n:
         return
@@ -28,42 +28,39 @@ def combinations(iterable, r):
         yield tuple(pool[i] for i in indices)
 
 
-def t_binomial(amostra, k, p = 0.500, bilateral = False):
+def t_binomial(N, k, alfa = 0.05, uni_bi = 2, p = 0.5 ):
     '''
-    O teste binomial calcula a probabilidade de uma frequencia de objetos estar dentro de um conjunto A ou B
-    exclusivamente.
-    :param amostra: n total da população
-    :param k: n da amostra menos frequente ou menor
-    :param p: nivel de significancia previamente estabelecido
-    :param bilateral: Se o teste for bilateral a margem esquerda e direita das areas de rejeição devem ser somadas
-    na prática z é multiplicado por 2 quando a amostra é >35 e pretende-se usar a Tabela A. Por padrão False.
-    :return: valor do teste binomial e valor z da significancia tabelada
-    eg. Numa amostra de 18 pessoas investgou-se se o estresse as faria voltar a usar a tecnica de dar nó primeiro
+    :param N: total amostral
+    :param k: menor grupo amonstral
+    :param alfa: valor de significancia adotado, 0.05 por padrão
+    :param uni_bi: Define se o teste deve ser testado unilateralmente ou bilateralmente multiplicando o valor da tabela A
+    :param p: valor de frenquancia esperada, por padrão 0.5
+    :return:
+    eg. Numa amostra de 18 pessoas investigou-se se o estresse as faria voltar a usar a tecnica de dar nó primeiro
     aprendida ou a tecnica aprendida depois. 2 pessoas apenas usaram a segunda tecnica o que para um nivel de
     significancia 0,01 no teste bonomial seria uma chamada da função dessa forma: print(t_binomial(18,2,0.01))
     O resultado favorece H1, de que p > q, ou seja, o estresse inferiorluenciou as pessoas a voltarem para a técnica
     primeiro aprendida.
     '''
-    z = 0
     q = 1 - p
-    coef_bi = (math.factorial(amostra) / (math.factorial(k) * math.factorial(amostra-k)))
-    if amostra > 25 and amostra*p*q >= 9:
-        z = (k + 0.5) - (amostra * p) / math.sqrt(amostra * p * q)
-    elif amostra <= 35:
-        z = float('0.'+tabelas.D[amostra][k])
+    h = z =  0.5
+
+    if N > 25 and N*p*q >= 9:
+        z = (k + 0.5) - (N * p) / math.sqrt(N * p * q)
+    elif N <= 35:
+        z = float('0.'+tabelas.D[N][k])
     else:
-        try:
-            z = float(tabelas.A[1][int(p * 100)])
-            if bilateral == True:
-                z = z * 2
-        except:
-            return'Não foi encontrado um valor p valido na tabela, tente 0.01, 0.02 ... 0.09'
+        if k > N*p:
+            h = -0.5
+
+        z = ((k + h) - (N * p)) / math.sqrt(N * p * q)
+        z = tabelastoolkit.alfaconvert(z,'a') * uni_bi
+        p = alfa
 
     if z < p:
         return f'z= {z} é menor que o nivel de significancia p={p} estabelecido, favorecendo H1'
     else:
         return f'z= {z} é maior que o nivel de significancia p={p} estabelecido, favorecendo H0'
-
 
 
 def t_quiquadrado(l, alfa = 0.001, e = 0 ):
@@ -110,7 +107,6 @@ def t_quiquadrado(l, alfa = 0.001, e = 0 ):
         return f'X² = {quiquadrado} é maior que z = {z}, para alfa = {alfa}. Favorecendo H0'
 
 
-
 def t_kolmogorovsmirnov(l_o, l_e, alfa, frAcumulada = False):
     """
     Teste de aderencia de Kolmogorov-Smirnov
@@ -148,15 +144,15 @@ def t_kolmogorovsmirnov(l_o, l_e, alfa, frAcumulada = False):
         return f'O valor Dmax = {Dmax} é menor a z = {z}, para alfa = {alfa}. Favorecendo H1'
 
 
-
-def t_infsimetria(lista, alfa = 0.05):
+def t_infsimetria(lista, alfa = 0.05, uni_bi = 2):
     """
-    Teste de inferiorerencia de Simetria de uma amostra
+    Teste de inferencia de Simetria de uma amostra
     :param lista: lista com os dados a serem analisados
     :param alfa: valor de significancia deejado padrão 0.05
+    :param uni_bi: determina se o teste é uni ou bilateral e se o valor buscado na tabela A deve ser dobrado ou não.
     :return: Zc e sua comparação com a tabela de referência
     exemplo: para os dados e = (13.53,28.42,48.11,48.64,51.40,59.91,67.98,79.13,103.05) Zc retorna ~0.154, que é
-    menor do que o valor z=0.4801 (para alfa 0.05), favorecendo H0, a amostra é simetrica.
+    menor do que o valor z=0.4443 (para alfa 0.05), favorecendo H0, a amostra é simetrica.
     """
     N = len(lista)
     if N < 20:
@@ -178,12 +174,13 @@ def t_infsimetria(lista, alfa = 0.05):
     b2 = b1 + len(direita)
     variancia = ((((N-3)*(N-4))/((N-1)*(N-2))) * b1) + (((N-3)/(N-4)) *b2) + (((N*(N-1)*(N-2))/6) - ((1-(((N-3)*(N-4)*(N-5))/(N*(N-1)*(N-2)))) * (tvalor ** 2)) )
     Zc = tvalor / math.sqrt(variancia)
-    z = float(tabelas.A[1][int(alfa * 100)])
+    z = tabelastoolkit.alfaconvert(Zc, 'a') * uni_bi
 
     if Zc > z:
         return f'O valor Zc = {Zc} é maior do que z = {z}, para alfa = {alfa}. Favorecendo H1, assimetria.'
     else:
         return f'O valor Zc = {Zc} é menor ou igual a z = {z}, para alfa = {alfa}. Favorecendo H0, simetria.'
+
 
 def t_aleatoriedade(lista, alfa = 0.05):
     """
@@ -240,15 +237,13 @@ def t_aleatoriedade(lista, alfa = 0.05):
             h = 0.5
         else:
             h = -0.5
-
         Z = (rvalor + h - (2*m*n)/(N-1)) / math.sqrt((2*m*n*((2*m*n)-N))/((N ** 2) * (N - 1)))
-
-        z = float(tabelas.A[1][int(alfa * 100)])
+        z = float(tabelas.Anorm[1][tabelastoolkit.alfaconvert(alfa, 'anorm')])
 
         if Z > z:
-            return f'O valor Z calculado {Z} é maior que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H1. A ordem dos dados não é aleatória'
+            return f'O valor Z calculado {Z} é maior que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H1. A amostra não é aleatória.'
         else:
-            return f'O valor Z calculado {Z} é menor que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H0. A ordem dos dados é aleatória'
+            return f'O valor Z calculado {Z} é menor que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H0. A amostra é aleatória.'
 
 
 def t_pontomudanca(lista, alfa=0.05):
@@ -340,9 +335,9 @@ j = (112,102,112,120,105,105,100,105,97,102,91,97,89,85,101,98,102,99,102,110,97
 k = (97,102,98,102,99,102,110,97,88,107,98,104)
 
 
-#print(t_binomial(40,19,0.01))
+#print(t_binomial(18,2))
 #print(t_quiquadrado(a, 0.01))
 #print(t_kolmogorovsmirnov(c,d,0.05, True))
-#print(t_infsimetria(e,0.05))
-#print(t_aleatoriedade(h))
+#print(t_infsimetria(e,0.05,1))
+print(t_aleatoriedade(h))
 #print(t_pontomudanca(i,0.01))

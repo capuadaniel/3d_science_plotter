@@ -1,3 +1,5 @@
+import tabelas
+
 def calcLIII(alfa):
     '''
     adaptado de Smirnov,N(1948). Tables for estimating the goodness of fit of empirical distributions.
@@ -29,26 +31,14 @@ def calcLIII(alfa):
 def alfaconvert(alfa, tabela):
     tabela = str(tabela.upper())
     if tabela == 'A':
-        # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela A
-        if alfa == 0.990:
-            return 1
-        elif alfa == 0.950:
-            return 2
-        elif alfa == 0.500:
-            return 3
-        elif alfa == 0.100:
-            return 4
-        elif alfa == 0.050:
-            return 5
-        elif alfa == 0.025:
-            return 6
-        elif alfa == 0.01:
-            return 7
-        elif alfa == 0.001:
-            return 8
-
+        alf_str = str(abs(alfa))
+        alf_A = int(alf_str[0:3].replace('.',''))
+        alf_B = int(alf_str[3])
+        c = tabelas.A[alf_A][alf_B]
+        if c == '':
+            return tabelas.A[alf_A][1]
         else:
-            print('Alpha Error, escolha 0.001, 0.01, 0.025, 0.05, 0.10, 0.5, 0.95 ou 0.90')
+            return c
 
     elif tabela.upper() == 'ANORM':
         # traduz o valor de significancia alfa para um inteiro utilizavel para a tabela C
