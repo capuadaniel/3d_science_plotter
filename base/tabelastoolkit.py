@@ -36,7 +36,7 @@ def alfaconvert(alfa, tabela):
         alf_B = int(alf_str[3])
         c = tabelas.A[alf_A][alf_B]
         if c == '':
-            return tabelas.A[alf_A][1]
+            return tabelas.A[alf_A][0]
         else:
             return c
 

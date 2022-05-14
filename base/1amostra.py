@@ -33,9 +33,9 @@ def t_binomial(N, k, alfa = 0.05, uni_bi = 2, p = 0.5 ):
     :param N: total amostral
     :param k: menor grupo amonstral
     :param alfa: valor de significancia adotado, 0.05 por padrão
-    :param uni_bi: Define se o teste deve ser testado unilateralmente ou bilateralmente multiplicando o valor da tabela A
+    :param uni_bi: teste unilateral ou bilateral, por padrão 2, bilateral.
     :param p: valor de frenquancia esperada, por padrão 0.5
-    :return:
+    :return: o valor z calculado, sua referencia na tabela e a hipotese favorecida.
     eg. Numa amostra de 18 pessoas investigou-se se o estresse as faria voltar a usar a tecnica de dar nó primeiro
     aprendida ou a tecnica aprendida depois. 2 pessoas apenas usaram a segunda tecnica o que para um nivel de
     significancia 0,01 no teste bonomial seria uma chamada da função dessa forma: print(t_binomial(18,2,0.01))
@@ -63,13 +63,13 @@ def t_binomial(N, k, alfa = 0.05, uni_bi = 2, p = 0.5 ):
         return f'z= {z} é maior que o nivel de significancia p={p} estabelecido, favorecendo H0'
 
 
-def t_quiquadrado(l, alfa = 0.001, e = 0 ):
+def t_quiquadrado(l, alfa = 0.005, e = 0 ):
     """
     Teste de X² de aderência.
     :param l: lista de frequencias observadas na amostra
-    :param alfa: nivel de significância do teste, 0.001 se não inferiorormado
+    :param alfa: valor de significancia adotado, 0.05 por padrão
     :param e: frequencia esperada, se deixada em branco é considerada disctribuição aleatória
-    :return: valor de X² e comparação com a tabela de referência
+    :return: o valor X² calculado, sua referencia na tabela e a hipotese favorecida.
     Exemplo: Numa corrida de cavalos acredita-se que quem corre na raia interna (posição 0 na lista) tem vantagem
     sobre quem corre nas raias externas. Portanto observaram-se quantas vitórias ocorreram em cada raia durante um mês
     em 144 corridas. H0 = a distribuição das vitórias nas raias é igual (18 em cada) e H1 = há diferenças entre as raias.
@@ -107,15 +107,15 @@ def t_quiquadrado(l, alfa = 0.001, e = 0 ):
         return f'X² = {quiquadrado} é maior que z = {z}, para alfa = {alfa}. Favorecendo H0'
 
 
-def t_kolmogorovsmirnov(l_o, l_e, alfa, frAcumulada = False):
+def t_kolmogorovsmirnov(l_o, l_e, alfa = 0.05, frAcumulada = False):
     """
     Teste de aderencia de Kolmogorov-Smirnov
     :param l_o: Lista de frequencias observadas
     :param l_e: Lista de frequencias esperadas ou preditas por um modelo
-    :param alfa: significancia estatistica
+    :param alfa: valor de significancia adotado, 0.05 por padrão
     :param frAcumulada: True para frequencias acumuladas (soma(1,2,3,4,5) = 5) e False para não (soma(1,1,1,1,1) = 5 )
     nas listas observada e esperada.
-    :return: valor do maximo desvio entre as listas Dmax e comparação com a tabela de referência
+    :return: o valor do maximo desvio calculado, sua referencia na tabela e a hipotese favorecida.
     exemplo: para as listas
     Observada = (203,352,452,523,572,605,634,660,683,697,709,718729,744,750,757,763,767,771,788,804,812,820,832,840)
     Predita = (212.81,348.26,442.06,510.45,562.15,602.34,634.27,660.10,681.32,698.97,713.82,726.44,737.26,746.61,754.74,761.86,768.13,773.68,778.62,796.68,807.86,815.25,820.39,826.86,840.01)
@@ -148,9 +148,9 @@ def t_infsimetria(lista, alfa = 0.05, uni_bi = 2):
     """
     Teste de inferencia de Simetria de uma amostra
     :param lista: lista com os dados a serem analisados
-    :param alfa: valor de significancia deejado padrão 0.05
-    :param uni_bi: determina se o teste é uni ou bilateral e se o valor buscado na tabela A deve ser dobrado ou não.
-    :return: Zc e sua comparação com a tabela de referência
+    :param alfa: valor de significancia adotado, 0.05 por padrão
+    :param uni_bi: teste unilateral ou bilateral, por padrão 2, bilateral.
+    :return: o valor z calculado, sua referencia na tabela e a hipotese favorecida.
     exemplo: para os dados e = (13.53,28.42,48.11,48.64,51.40,59.91,67.98,79.13,103.05) Zc retorna ~0.154, que é
     menor do que o valor z=0.4443 (para alfa 0.05), favorecendo H0, a amostra é simetrica.
     """
@@ -188,7 +188,7 @@ def t_aleatoriedade(lista, alfa = 0.05):
     :param lista: lista de valores não ordenados a ser analizada. Para valores numéricos a mediana é tomada para definir grupos
     acima e abaixo dela, para listas de tipos definidos é necessario definir apenas duas letras diferentes representando as observações
     na ordem em que ocorreram.
-    :return: R chance de uma lista ser aelatória.
+    :return: o valor z calculado, sua referencia na tabela e a hipotese favorecida.
     exemplo 1: o lançamento de 1 dado 18 vezes gerando a lista g = (1,5,3,2,4,6,2,3,3,5,2,1,6,4,6,3,5,2) que será classificada
     com valores maiores que 3 ou menores ou iguais a 3.
     exemplo 2: 12 pessoas formam fila e são classificadas como altas e baixas gerando a lista h = ('h','l','h','h','l','l','l','l','h','h','l','l')
@@ -246,14 +246,14 @@ def t_aleatoriedade(lista, alfa = 0.05):
             return f'O valor Z calculado {Z} é menor que o valor crítico de z = {z}, para alfa = {alfa}. Favorecendo H0. A amostra é aleatória.'
 
 
-def t_pontomudanca(lista, alfa=0.05):
+def t_pontomudanca(lista, alfa = 0.05):
     '''
     O teste de ponto mudança serve para desocobrir se há uma alteração suficientemente grande numa serie de valores a ponto
     de ser razoavel assumir que essa variação não é aleatória, geralmente associada a uma mudança de desempenho ou no comportamento
     descrito pela variável.
     :param lista: lista de valores binarios (sucesso/fracasso) ou ordinais a serem avaliados
-    :param alfa: nivel de confiança do teste, por padrão 0.05
-    :return: o valor z calculado, sua referência na tabela e a hipótese favorecida.
+    :param alfa: valor de significancia adotado, 0.05 por padrão
+    :return: o valor z calculado, sua referencia na tabela e a hipotese favorecida.
     '''
     N = len(lista)  # tamanho da amostra
     m = sum(lista)  # n sucessos
